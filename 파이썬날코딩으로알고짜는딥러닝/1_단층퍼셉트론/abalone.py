@@ -12,13 +12,13 @@ RND_STD = .003  # for initiating hyperparamerter
 LEARNING_RATE = .001
 
 # 1. main
-def abalone_exec(epoch_count=10, mb_size=10, report=1):
+def abalone_exec(epoch_cnt=10, mb_size=10, report=1):
     """main
     
     """
     load_abalone_dataset()  # 데이터 불러오기
     init_model()  # 파라메터 초가화
-    train_and_test(epoch_count, mb_size, report)  # 모델링
+    train_and_test(epoch_cnt, mb_size, report)  # 모델링
     
 # 2. load data
 def load_abalone_dataset():
@@ -42,7 +42,7 @@ def load_abalone_dataset():
             if row[0] == 'M': data[n, 1] = 1
             if row[0] == 'F': data[n, 2] = 1
             data[n, 3:] = row[1: ]  # 성별정보를 제외하고 data 에 저장
-    
+                
 # 파라메터 초기화
 
 def init_model():
@@ -56,26 +56,28 @@ def init_model():
 # 트레인
 def train_and_test(epoch_cnt, mb_size, report):
 
-    step_cnt = arange(mb_size)  # 데이터 섞기, train, test 분리, ?
+    step_cnt = arange_data(mb_size)  # 데이터 섞기, train, test 분리, ?
     test_x, test_y = get_test_data()  # 테스트데이터 추출
     
-    for epoch in range(epoch_count):
+    for epoch in range(epoch_cnt):
         # 에포크 마큼 반복
         losses, accs = [], []
         
         for n in range(step_cnt):
             train_x, train_y = get_train_data(mb_size, n)  # 미니배치 추출
             loss, acc = run_train(train_x, train_y)
+            print(f'==={acc}===')
             losses.append(loss)
             accs.append(acc)
             
         if report > 0 and (epoch+1) % report == 0:
             acc = run_test(test_x, test_y)
+
             # 에포크, 손실값평균, 정확도평균 출력
             print(f' Epoch {epoch+1}: loss={np.mean(losses)}, accuracy={np.mean(accs)}/{acc}')
             
     final_acc = run_test(test_x, test_y)
-    print(f'Final test: final accuracy = {fianl_acc}')
+    print(f'Final test: final accuracy = {final_acc}')
 
     
 # 데이터 섞기, 미니배치 생성, 테스트 시작 인덱스 지정#
@@ -84,7 +86,7 @@ def arange_data(mb_size):
     global data, shuffle_map, test_begin_idx
     
     shuffle_map = np.arange(data.shape[0])  # 미니배치 수만큼 인덱스 배열 생성
-    np.random.shuffle(shuffle_mape)  # 섞기
+    np.random.shuffle(shuffle_map)  # 섞기
     step_cnt = int(data.shape[0] * 0.8) // mb_size  # 에포크당 배치 실행 수(20% 테스트셋)
     test_begin_idx = step_cnt * mb_size  # 테스트 시작 인덱스 지정
     
@@ -93,11 +95,10 @@ def arange_data(mb_size):
 
 # 테스트데이터 추출
 def get_test_data():
-    
     global data, shuffle_map, test_begin_idx, output_cnt
-    
-    test_data = data[shuffle_map[test_begin_dix]]
-    test_x, test_y = test_data[:, :-output_cnt], test_data[:, -outptut_cnt:]
+   
+    test_data = data[shuffle_map[test_begin_idx:]]
+    test_x, test_y = test_data[:, :-output_cnt], test_data[:, -output_cnt:]
     return test_x, test_y
     
 
@@ -110,7 +111,7 @@ def get_train_data(mb_size, nth):
         np.random.shuffle(shuffle_map[:test_begin_idx])  # 첫 수행일 때 섞기
         
     train_data = data[shuffle_map[mb_size*nth: mb_size*(nth+1)]]  # 미니배치 구간
-    train_x, train_y = train_data[:, :-output_cnt], train_data[:, -output_data:]
+    train_x, train_y = train_data[:, :-output_cnt], train_data[:, -output_cnt:]
     
     return train_x, train_y
 
@@ -125,7 +126,7 @@ def run_train(x, y):
     loss, aux_pp = forward_postproc(output, y)
     accuracy = forward_postproc(output, y)  # 결과 저장
     
-    G_loss = 1  # 역전파  dL/dL = 1
+    G_loss = 1  # 역전파  dL/dL  1
     G_output = backprop_postproc(G_loss, aux_pp)  # 역전파(역순)
     backprop_neuralnet(G_output, aux_nn)
     
@@ -133,17 +134,17 @@ def run_train(x, y):
                   
     
 def run_test(x, y):
-    output, _ = fowrad_nuralnet(x)
+    output, _ = forward_neuralnet(x)
     accuracy = eval_accuracy(output, y)
-    return acuracy
+    return accuracy
 
 # 순전파, 역전파 함수 정의
-def foward_neuralnet(x):
+def forward_neuralnet(x):
     global weight, bias
-    output = np.matmu(x, weight) + bias
+    output = np.matmul(x, weight) + bias
     return output, x
 
-def backprop_neuralnet(G_ouput, x):
+def backprop_neuralnet(G_output, x):
     """역전파
     
     Parameters
@@ -181,7 +182,7 @@ def backprop_postproc(G_loss, diff):
     
     G_square = g_loss_square * G_loss
     G_diff = g_square_diff * G_square
-    G_output = g_dirr_output * G_dif
+    G_output = g_diff_output * G_diff
     
     return G_output
 
