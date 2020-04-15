@@ -1,8 +1,10 @@
 # folder
 venv/
 */.ipynb_checkpoints/*
+__pychache__/
 
 # file
 *.csv
 .ipynb_checkpoints
-__pycache__
+*.sublime-workspace
+*.pyc

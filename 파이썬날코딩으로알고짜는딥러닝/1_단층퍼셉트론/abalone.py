@@ -2,19 +2,24 @@ import numpy as np
 import csv
 import time
 
-np.random.seed(42) # set reandom seed
-def randomize(): 
+
+np.random.seed(42)  # set reandom seed
+
+
+def randomize():
     np.random.seed(time.time())  # set random seed with time
-    
+
+
 # set hyperparameters
 RND_MEAN = 0  # for initiating hyperparamerter
 RND_STD = .003  # for initiating hyperparamerter
 LEARNING_RATE = .001
 
+
 # 1. main
 def abalone_exec(epoch_cnt=10, mb_size=10, report=1):
     """main
-    
+
     """
     load_abalone_dataset()  # 데이터 불러오기
     init_model()  # 파라메터 초가화

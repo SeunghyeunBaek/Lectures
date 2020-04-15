@@ -41,9 +41,3 @@ eval_accuracy --> [*]
 * backprop_neuralnet
 * backprop_postproc
 
-
-
-
-
-
-
