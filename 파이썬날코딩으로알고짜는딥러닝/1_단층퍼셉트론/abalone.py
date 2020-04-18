@@ -233,7 +233,7 @@ def get_test_data(data, shuffle_map, test_begin_idx, output_cnt):
 def run_train(x, y):
     # foward
     out_y, x = foward_nn(x=x)  # get out_y and return out_y and x
-    loss, aux_pp = forward_postproc(out_y=out_y, y=y)  # 
+    loss, diff = forward_postproc(out_y=out_y, y=y)  # get loss
     accuracy = eval_accuracy(out_y=out_y, y=y)
 
     # back
@@ -245,12 +245,83 @@ def run_train(x, y):
 
 
 def foward_nn(x, weight_arr, bias_arr):
+    """foward neuralnet
+
+    Parameters
+    -----------
+    x: numpy ndarray
+        n_rows: number of batches
+        n_cols: number of features
+    weight_arr: numpy ndarray
+        n_rows: number of features
+        n_cols: number of layers
+    bias_arr: numpy adarray
+
+    Returns
+    --------
+    out_y: numpy ndarry
+        n_rows: number of features
+        n_cols: number of batches
+
+    """
     out_y = np.matmul(x, weight_arr) + bias_arr
-    return out_y, x 
-
-def backprop_nn(out_grd, x)
+    return out_y, x
 
 
+def forward_postproc(out_y, y):
+    """foward neuralnet post process
+
+    Parameters
+    ------------
+    out_y: numpy ndarray
+    y: numpy ndarray
+
+    Returns
+    --------
+    loss: float
+    diff: float
+    """
+    diff = out_y - y
+    square = np.square(diff)
+    loss = np.mean(square)
+
+    return loss, diff
+
+
+def backprop_nn(dl_dout_arr, weight_arr, bias_arr, x):
+    """back propagatagtion
+
+    Parameters
+    ------------
+    dl_dout_arr: numpy ndarray
+        순전파 출력에 대한 Loss 기울기 (dl/dout)
+        r_row : number of batches
+        n_col: number of output
+
+    weight_arr: numpy ndarray
+        n_row: number of features
+        n_col: number of output
+
+    bias_arr: numpy ndarray
+        n_row: number of batches
+        n_col: number of output
+
+    Returns
+    --------
+    weight_arr: numpy ndarray
+    bias_arr: numpy ndarray
+    """
+
+    dout_dw_arr = x.transpose()  # dout/dw
+    dl_dw_arr = np.matmul(dout_dw_arr, dl_dout_arr)  # dl/dout
+
+    dl_db_arr = np.sum(dl_dout_arr)  # dl/db
+
+    # update weight, bias with learning rate
+    weight_arr = LEARNING_RATE * dl_dw_arr
+    bias_arr = LEARNING_RATE * dl_db_arr
+
+    return weight_arr, bias_arr
 
 
 def run_test():
