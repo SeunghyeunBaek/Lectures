@@ -134,11 +134,7 @@ def train_and_test(data, epoch_cnt, mb_size, report, weight_arr, bias_arr):
     for epoch in range(epoch_cnt):
         loss_list, acc_list = [], []
         # get mini batch for this step
-        print(f"""weight arr
 
-            {weight_arr}
-            ==============
-            """)
         for step in range(step_cnt):
             train_x, train_y = get_train_data(data=data,
                                                  mb_size=mb_size,
@@ -162,11 +158,9 @@ def train_and_test(data, epoch_cnt, mb_size, report, weight_arr, bias_arr):
 
         if (report > 0) & ((epoch + 1) % report == 0):
             test_acc = run_test(x=test_x, y=test_y, weight_arr=weight_arr, bias_arr=bias_arr)
-            print(f'''
-                Epoch: {epoch+1}
-                Train loss mean: {np.mean(loss_list)}
-                Train accuracy mean: {np.mean(acc_list)}
-                Test accuracy: {test_acc}''')
+            print(f'epoch{epoch+1}: loss={round(np.mean(loss_list), 3)} acc={round(np.mean(acc_list),3)} / {round(test_acc, 3)}')
+
+      
     final_acc = run_test(x=test_x, y=test_y,
                            weight_arr=-weight_arr, bias_arr=bias_arr)
     print(f"""
