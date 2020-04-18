@@ -1,4 +1,5 @@
 
+# =*=coding: utf-8 -*-
 # libraries
 import numpy as np
 import time
@@ -41,7 +42,8 @@ def main(epoch_cnt=10, mb_size=10, report=1):
     """
     dataset = load_data_set(path=data_path, input_cnt=10, output_cnt=1)
     weight_arr, bias_arr = init_model(rnd_mean=RND_MEAN, rnd_std=RND_STD, input_cnt=10, output_cnt=1)
-    train_and_test()
+    train_and_test(data=dataset, epoch_cnt=epoch_cnt, mb_size=mb_size, report=report,
+                     weight_arr=weight_arr, bias_arr=bias_arr)
 
     return None
 
@@ -81,7 +83,7 @@ def load_data_set(path, input_cnt, output_cnt):
             data[n, 2] = 1
         else:
             print("invalid gender")
-
+        data[n, 3:] = row[1:]
     return data
 
 
@@ -107,7 +109,7 @@ def init_model(rnd_mean, rnd_std, input_cnt, output_cnt):
     return weight_arr, bias_arr
 
 
-def train_and_test(data, epoch_cnt, mb_size, report):
+def train_and_test(data, epoch_cnt, mb_size, report, weight_arr, bias_arr):
     """train and test
     run nuralnet
 
@@ -123,7 +125,7 @@ def train_and_test(data, epoch_cnt, mb_size, report):
     Returns
     --------
     """
-    shuffle_map, step_cnt, test_begin_idx = arange_data(mb_size=mb_size)
+    shuffle_map, step_cnt, test_begin_idx = arange_data(data=data, mb_size=mb_size)
     test_x, test_y = get_test_data(data=data,
                                       shuffle_map=shuffle_map,
                                       test_begin_idx=test_begin_idx,
@@ -132,6 +134,11 @@ def train_and_test(data, epoch_cnt, mb_size, report):
     for epoch in range(epoch_cnt):
         loss_list, acc_list = [], []
         # get mini batch for this step
+        print(f"""weight arr
+
+            {weight_arr}
+            ==============
+            """)
         for step in range(step_cnt):
             train_x, train_y = get_train_data(data=data,
                                                  mb_size=mb_size,
@@ -139,27 +146,32 @@ def train_and_test(data, epoch_cnt, mb_size, report):
                                                  test_begin_idx=test_begin_idx,
                                                  output_cnt=1,
                                                  step_idx=step)
+            # print(f'train_x: {train_y}')
             # run train and get loss, acc
-            train_loss, train_acc = run_train(train_x, train_y)
+            train_loss, train_acc, weight_arr_updated, bias_arr_updated = run_train(x=train_x,
+                                                                                            y=train_y,
+                                                                                            weight_arr=weight_arr,
+                                                                                            bias_arr=bias_arr)
+
+            # update weigth and bias
+            weight_arr = weight_arr_updated
+            bias_arr = bias_arr_updated
+
             loss_list.append(train_loss)
             acc_list.append(train_acc)
 
         if (report > 0) & ((epoch + 1) % report == 0):
-            test_acc = run_test(test_x, test_y)
-            print(f"""
-            Epoch: {epoch+1}
-            Train loss mean: {np.mean(loss_list)}
-            Train accuracy mean: {np.mean(acc_list)}
-            Test accuracy: {test_acc}
-            =============================================
-            /n
-            """)
-
-    final_acc = run_test(test_x, test_y)
+            test_acc = run_test(x=test_x, y=test_y, weight_arr=weight_arr, bias_arr=bias_arr)
+            print(f'''
+                Epoch: {epoch+1}
+                Train loss mean: {np.mean(loss_list)}
+                Train accuracy mean: {np.mean(acc_list)}
+                Test accuracy: {test_acc}''')
+    final_acc = run_test(x=test_x, y=test_y,
+                           weight_arr=-weight_arr, bias_arr=bias_arr)
     print(f"""
     Final Test
-    Accuracy = {final_acc}
-    """)
+    Accuracy = {final_acc}""")
 
 
 def arange_data(data, mb_size):
@@ -204,7 +216,7 @@ def get_train_data(data, mb_size, shuffle_map, test_begin_idx, output_cnt, step_
         np.random.shuffle(shuffle_map[:test_begin_idx])
     # get batch train data
     train_data = data[shuffle_map[mb_size * step_idx:mb_size * (step_idx + 1)]]
-    train_x, train_y = train_data[: -output_cnt], train_data[:, -output_cnt:]
+    train_x, train_y = train_data[:, : -output_cnt], train_data[:, -output_cnt:]
     return train_x, train_y
 
 
@@ -230,18 +242,26 @@ def get_test_data(data, shuffle_map, test_begin_idx, output_cnt):
     return test_x, test_y
 
 
-def run_train(x, y):
+def run_train(x, y, weight_arr, bias_arr):
     # foward
-    out_y, x = foward_nn(x=x)  # get out_y and return out_y and x
+    # get out_y and return out_y and x
+    out_y, x = foward_nn(x=x, weight_arr=weight_arr, bias_arr=bias_arr)
     loss, diff = forward_postproc(out_y=out_y, y=y)  # get loss
     accuracy = eval_accuracy(out_y=out_y, y=y)
 
     # back
-    loss_grd = 1  # dL/dL
-    out_grd = backprop_postproc(g_loss=g_loss, aux_pp=aux_pp)  # dL/dx
-    backprop_nn(g_out, aux_nn)
+    dl_dout = 1
+    dl_dout = backprop_postproc(dl_dout_arr=dl_dout, diff_arr=diff)
+    weight_arr_updated, bias_arr_updated = backprop_nn(dl_dout_arr=dl_dout, x=x,
+                                                            weight_arr=weight_arr, bias_arr=bias_arr)
 
-    return loss, accuracy
+    return loss, accuracy, weight_arr_updated, bias_arr_updated
+
+
+def run_test(x, y, weight_arr, bias_arr):
+    output, x = foward_nn(x=x, weight_arr=weight_arr, bias_arr=bias_arr)
+    accuracy = eval_accuracy(output, y)
+    return accuracy
 
 
 def foward_nn(x, weight_arr, bias_arr):
@@ -264,6 +284,7 @@ def foward_nn(x, weight_arr, bias_arr):
         n_cols: number of batches
 
     """
+
     out_y = np.matmul(x, weight_arr) + bias_arr
 
     return out_y, x
@@ -327,11 +348,10 @@ def backprop_nn(dl_dout_arr, weight_arr, bias_arr, x):
     return weight_arr, bias_arr
 
 
-def backprop_postproc(diff_arr):
+def backprop_postproc(dl_dout_arr, diff_arr):
     """back propagation post porcess
     loss(mean) -> square -> diff -> output
 
-    return 
     Parameters
     -----------
     diff: numpy ndarray
@@ -339,35 +359,19 @@ def backprop_postproc(diff_arr):
     --------
     """
 
-    dl_dl = 1
     dl_dmean = np.ones(diff_arr.shape) / np.prod(diff_arr.shape)
     dmean_ddiff = 2 * diff_arr
     ddiff_dy = 1
 
-    dl_dout = dl_dl * dl_dmean * dmean_ddiff * ddiff_dy
+    dl_dout = dl_dout_arr * dl_dmean * dmean_ddiff * ddiff_dy
 
     return dl_dout
 
 
-def run_test():
-    pass
+def eval_accuracy(y, out_y):
+    return 1 - np.mean(np.abs((out_y-y)/y))
 
 
 if __name__ == '__main__':
     data_path = '../data/abalone.csv'
-
-    # dataset = load_data_set(path=data_path, input_cnt=10, output_cnt=1)
-    # weight_arr, bias_arr = init_model(rnd_mean=RND_MEAN, rnd_std=RND_STD, input_cnt=10, output_cnt=1)
-    # shuffle_map, step_cnt, test_begin_idx = arange_data(data=dataset, mb_size=MB_SIZE)
-    # test_x, test_y = get_test_data(data=dataset,
-    #                                   shuffle_map=shuffle_map,
-    #                                   test_begin_idx=test_begin_idx,
-    #                                   output_cnt=1)
-    # train_x, train_y = get_train_data(data=dataset,
-    #                                          mb_size=MB_SIZE,
-    #                                          shuffle_map=shuffle_map,
-    #                                          test_begin_idx=test_begin_idx,
-    #                                          output_cnt=1,
-    #                                          step_idx=5)
-
-    # 
+    main()
