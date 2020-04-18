@@ -14,10 +14,10 @@ def randomize():
 
 
 # set hyperparmeters
-RND_MEAN = 0
-RND_STD = .003
-MB_SIZE = 10
-LEARNING_RATE = .001
+RND_MEAN = 0  # for default weight, bias
+RND_STD = .003  # for default weight, bias
+MB_SIZE = 10  # mini batch size
+LEARNING_RATE = .001  # learning rate
 data_path = '../data/abalone.csv'
 
 
@@ -265,11 +265,13 @@ def foward_nn(x, weight_arr, bias_arr):
 
     """
     out_y = np.matmul(x, weight_arr) + bias_arr
+
     return out_y, x
 
 
 def forward_postproc(out_y, y):
     """foward neuralnet post process
+    get differents, square, loss
 
     Parameters
     ------------
@@ -290,6 +292,7 @@ def forward_postproc(out_y, y):
 
 def backprop_nn(dl_dout_arr, weight_arr, bias_arr, x):
     """back propagatagtion
+    update weight, bias with gradiant L
 
     Parameters
     ------------
@@ -322,6 +325,28 @@ def backprop_nn(dl_dout_arr, weight_arr, bias_arr, x):
     bias_arr = LEARNING_RATE * dl_db_arr
 
     return weight_arr, bias_arr
+
+
+def backprop_postproc(diff_arr):
+    """back propagation post porcess
+    loss(mean) -> square -> diff -> output
+
+    return 
+    Parameters
+    -----------
+    diff: numpy ndarray
+    Returns
+    --------
+    """
+
+    dl_dl = 1
+    dl_dmean = np.ones(diff_arr.shape) / np.prod(diff_arr.shape)
+    dmean_ddiff = 2 * diff_arr
+    ddiff_dy = 1
+
+    dl_dout = dl_dl * dl_dmean * dmean_ddiff * ddiff_dy
+
+    return dl_dout
 
 
 def run_test():
