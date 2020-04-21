@@ -18,7 +18,7 @@ def randomize():
 RND_MEAN = 0  # for default weight, bias
 RND_STD = .003  # for default weight, bias
 MB_SIZE = 10  # mini batch size
-LEARNING_RATE = .001  # learning rate
+LEARNING_RATE = .001 # learning rate
 data_path = '../data/abalone.csv'
 
 
@@ -132,16 +132,19 @@ def train_and_test(data, epoch_cnt, mb_size, report, weight_arr, bias_arr):
                                       output_cnt=1)
 
     for epoch in range(epoch_cnt):
+    #for epoch in range(1):
         loss_list, acc_list = [], []
         # get mini batch for this step
 
         for step in range(step_cnt):
+        # for step in range(2):
             train_x, train_y = get_train_data(data=data,
                                                  mb_size=mb_size,
                                                  shuffle_map=shuffle_map,
                                                  test_begin_idx=test_begin_idx,
                                                  output_cnt=1,
                                                  step_idx=step)
+   
             # print(f'train_x: {train_y}')
             # run train and get loss, acc
             train_loss, train_acc, weight_arr_updated, bias_arr_updated = run_train(x=train_x,
@@ -152,20 +155,18 @@ def train_and_test(data, epoch_cnt, mb_size, report, weight_arr, bias_arr):
             # update weigth and bias
             weight_arr = weight_arr_updated
             bias_arr = bias_arr_updated
-
             loss_list.append(train_loss)
             acc_list.append(train_acc)
 
         if (report > 0) & ((epoch + 1) % report == 0):
             test_acc = run_test(x=test_x, y=test_y, weight_arr=weight_arr, bias_arr=bias_arr)
-            print(f'epoch{epoch+1}: loss={round(np.mean(loss_list), 3)} acc={round(np.mean(acc_list),3)} / {round(test_acc, 3)}')
+            print(f"epoch {epoch+1}: loss={round(np.mean(loss_list), 3)} train_acc= {round(np.mean(acc_list), 3)} / test_acc= {round(test_acc, 3)}")
 
-      
     final_acc = run_test(x=test_x, y=test_y,
-                           weight_arr=-weight_arr, bias_arr=bias_arr)
-    print(f"""
-    Final Test
-    Accuracy = {final_acc}""")
+                           weight_arr=-weight_arr,
+                           bias_arr=bias_arr)
+
+    print(f"Final Test Accuracy = {final_acc}")
 
 
 def arange_data(data, mb_size):
@@ -242,10 +243,11 @@ def run_train(x, y, weight_arr, bias_arr):
     out_y, x = foward_nn(x=x, weight_arr=weight_arr, bias_arr=bias_arr)
     loss, diff = forward_postproc(out_y=out_y, y=y)  # get loss
     accuracy = eval_accuracy(out_y=out_y, y=y)
+    
 
     # back
-    dl_dout = 1
-    dl_dout = backprop_postproc(dl_dout_arr=dl_dout, diff_arr=diff)
+    dl_dl = 1
+    dl_dout = backprop_postproc(dl_dl=dl_dl, diff_arr=diff)
     weight_arr_updated, bias_arr_updated = backprop_nn(dl_dout_arr=dl_dout, x=x,
                                                             weight_arr=weight_arr, bias_arr=bias_arr)
 
@@ -253,8 +255,8 @@ def run_train(x, y, weight_arr, bias_arr):
 
 
 def run_test(x, y, weight_arr, bias_arr):
-    output, x = foward_nn(x=x, weight_arr=weight_arr, bias_arr=bias_arr)
-    accuracy = eval_accuracy(output, y)
+    out_y, x = foward_nn(x=x, weight_arr=weight_arr, bias_arr=bias_arr)
+    accuracy = eval_accuracy(y=y,  out_y=out_y)
     return accuracy
 
 
@@ -332,38 +334,43 @@ def backprop_nn(dl_dout_arr, weight_arr, bias_arr, x):
 
     dout_dw_arr = x.transpose()  # dout/dw
     dl_dw_arr = np.matmul(dout_dw_arr, dl_dout_arr)  # dl/dout
-
-    dl_db_arr = np.sum(dl_dout_arr)  # dl/db
-
+    
+    dout_db_arr = 1
+    dl_db_arr = np.sum(dl_dout_arr, axis=0)
+    
     # update weight, bias with learning rate
-    weight_arr = LEARNING_RATE * dl_dw_arr
-    bias_arr = LEARNING_RATE * dl_db_arr
+    weight_arr = weight_arr - LEARNING_RATE * dl_dw_arr
+    bias_arr = bias_arr - LEARNING_RATE * dl_db_arr
 
     return weight_arr, bias_arr
 
 
-def backprop_postproc(dl_dout_arr, diff_arr):
+def backprop_postproc(dl_dl, diff_arr):
     """back propagation post porcess
-    loss(mean) -> square -> diff -> output
+    loss -> mean -> square -> diff -> output
 
     Parameters
     -----------
-    diff: numpy ndarray
+    dl_dl: float
+        dl/dl
+    diff_arr: numpy ndarray
     Returns
     --------
+    dl_dout: numpy ndarray
     """
-
-    dl_dmean = np.ones(diff_arr.shape) / np.prod(diff_arr.shape)
-    dmean_ddiff = 2 * diff_arr
-    ddiff_dy = 1
-
-    dl_dout = dl_dout_arr * dl_dmean * dmean_ddiff * ddiff_dy
-
-    return dl_dout
-
+    
+    dl_dmean = dl_dl
+    dmean_dsq = 1 / np.prod(diff_arr.shape)
+    dsq_ddiff = 2 * diff_arr
+    dout_ddiff = 1
+    
+    dl_dout = dl_dmean * dmean_dsq * dsq_ddiff * dout_ddiff
+    
+    return dl_dout    
 
 def eval_accuracy(y, out_y):
-    return 1 - np.mean(np.abs((out_y-y)/y))
+    acc = 1 - np.mean(np.abs((out_y-y)/y))
+    return acc
 
 
 if __name__ == '__main__':
