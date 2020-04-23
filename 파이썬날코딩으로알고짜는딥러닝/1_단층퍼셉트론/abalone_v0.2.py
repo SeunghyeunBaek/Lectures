@@ -327,6 +327,9 @@ def backprop_nn(dl_dout_arr, weight_arr, bias_arr, x):
         n_col: number of output
 
     Returns
+    dl / dout =>
+        dl / dw => dl / dout * dout / dw
+        dl / db
     --------
     weight_arr: numpy ndarray
     bias_arr: numpy ndarray
@@ -356,7 +359,7 @@ def backprop_postproc(dl_dl, diff_arr):
     diff_arr: numpy ndarray
     Returns
     --------
-    dl_dout: numpy ndarray
+    dl_dout: numpy ndarray  ( dl / dout )
     """
     
     dl_dmean = dl_dl

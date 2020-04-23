@@ -1,10 +1,8 @@
-# Function details
+# Appendix
 
 ## Neuralnet Architecture
 
-
-
-
+생략
 
 ## Flowchart
 
@@ -40,6 +38,28 @@ is_max_epoch(no)->shuffle
 
 
 
+## Parameter Dimensions
+
+* data
+  * Features(X): 10
+  * Y: 1
+
+* Hyper parameters
+  * Batch size : 20
+  * Learning rate: 0.001
+
+| 파라메터 | 차원     | 설명              | 비고                     |
+| -------- | -------- | ----------------- | ------------------------ |
+| X        | (20, 10) | 입력              | (batch_size, n_features) |
+| W        | (10, 1)  | 가중치            | (n_features, n_output)   |
+| B        | (1, 1)   | 편향              | -                        |
+| OUT_Y    | (20, 1)  | 출력              | (batch_size, n_output)   |
+| Y        | (20, 1)  | 실제 정답         | (batch_size, n_y)        |
+| DIFF     | (20, 1)  | abs(OUT_Y - Y)    | (batch_size, n_y)        |
+| SQUARE   | (20, 1)  | (DIFF)^2          | (batch_size, n_y)        |
+| MEAN     | (1, 1)   | mean(SQUARE)      | -                        |
+| LOSS     | (1, 1)   | Mean Square Error | -                        |
+
 ## Call graph
 
 ```mermaid
@@ -64,20 +84,4 @@ run_test --> eval_accuracy
 eval_accuracy --> [*]
 ```
 
-## Variable List
-
-* abalone_exec
-* load_ablaone_dataset
-* init_model
-* train_and_test
-* arrage_data
-* get_train_data
-* get_test_data
-* run_train
-* run_test
-* forward_neuralnet
-* forward_postproc
-* eval_accuracy
-* backprop_neuralnet
-* backprop_postproc
 
