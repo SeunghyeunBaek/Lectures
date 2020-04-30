@@ -12,7 +12,6 @@ np.random.seed(42)
 def randomize(): np.random.seed(time.time())
 
 class Pulsar:
-
     def __init__(self, adjust_ratio=False):
         self.input_cnt = 8
         self.output_cnt = 1
